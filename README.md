@@ -28,16 +28,16 @@ docker run -d --name zkpos-postgres -p 5432:5432 -e PGDATA=/var/lib/postgresql/d
 ```
 3. run witness
 ```bash
-cd src/witness && go run main.py
+cd src/witness && go run main.go
 ```
 4. run prover
 ```bash
-cd src/prover && go run main.py
+cd src/prover && go run main.go
 ```
 5. export proof0 table for postgres zkpos database and save it to `src/verifier/proof.csv`
 6. run verifier
 ```bash
-cd src/prover && go run main.py
+cd src/prover && go run main.go
 ```
 
 You can skip steps 2-5 if you do not want to generate proof by yourself, there is already my proof in `src/verifier`.
