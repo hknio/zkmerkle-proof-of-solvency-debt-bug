@@ -40,7 +40,7 @@ cd src/prover && go run main.go
 cd src/verifier && go run main.go
 ```
 
-You can skip steps 2-5 if you do not want to generate proof by yourself, there is already my proof in `src/verifier`.
+You can skip steps 2-5 if you do not want to generate proof by yourself, there is already my proof in `src/verifier/config`.
 
 ### Author
 
