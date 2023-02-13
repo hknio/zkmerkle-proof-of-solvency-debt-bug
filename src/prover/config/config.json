@@ -5,5 +5,5 @@
     "Type": "node"
   },
   "DbSuffix": "0",
-  "ZkKeyName": "/server/data/.keys/zkpor864"
+  "ZkKeyName": "../keygen/zkpor16"
 }

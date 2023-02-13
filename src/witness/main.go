@@ -4,17 +4,18 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"math/big"
+
 	"github.com/binance/zkmerkle-proof-of-solvency/src/utils"
 	"github.com/binance/zkmerkle-proof-of-solvency/src/witness/config"
 	"github.com/binance/zkmerkle-proof-of-solvency/src/witness/witness"
-	"io/ioutil"
-	"math/big"
 )
 
 func GenerateFakeCexAssetsInfo() []utils.CexAssetInfo {
 	cexAssetsInfoList := make([]utils.CexAssetInfo, utils.AssetCounts)
-	for i := 0; i < utils.AssetCounts; i++ {
-		cexAssetsInfoList[i].BasePrice = uint64(i + 1)
+	for i := int64(0); i < utils.AssetCounts; i++ {		
+		cexAssetsInfoList[i].BasePrice = big.NewInt(i + 1)
 	}
 	return cexAssetsInfoList
 }
@@ -30,9 +31,9 @@ func GenerateFakeAccounts(counts uint32, cexAssetsInfo []utils.CexAssetInfo) []u
 			assets[j].Equity = uint64(j*2 + 1)
 			assets[j].Debt = uint64(j + 1)
 			accounts[i].TotalEquity = new(big.Int).Add(accounts[i].TotalEquity,
-				new(big.Int).Mul(new(big.Int).SetUint64(assets[j].Equity), new(big.Int).SetUint64(cexAssetsInfo[j].BasePrice)))
+				new(big.Int).Mul(new(big.Int).SetUint64(assets[j].Equity), cexAssetsInfo[j].BasePrice))
 			accounts[i].TotalDebt = new(big.Int).Add(accounts[i].TotalDebt,
-				new(big.Int).Mul(new(big.Int).SetUint64(assets[j].Debt), new(big.Int).SetUint64(cexAssetsInfo[j].BasePrice)))
+				new(big.Int).Mul(new(big.Int).SetUint64(assets[j].Debt), cexAssetsInfo[j].BasePrice))
 		}
 		accounts[i].AccountIndex = uint32(i)
 		accounts[i].Assets = assets

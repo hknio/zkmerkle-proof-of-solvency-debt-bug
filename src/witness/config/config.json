@@ -1,7 +1,7 @@
 {
   "PostgresDataSource" : "host=127.0.0.1 user=postgres password=zkpos@123 dbname=zkpos port=5432 sslmode=disable",
   "DbSuffix": "0",
-  "UserDataFile": "/server/data/20230118",
+  "UserDataFile": "../sampledata",
   "TreeDB": {
     "Driver": "redis",
     "Option": {

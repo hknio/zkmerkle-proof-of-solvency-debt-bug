@@ -18,6 +18,7 @@ import (
 	"log"
 	"os"
 	"time"
+	"math/big"
 )
 
 func main() {
@@ -138,7 +139,7 @@ func main() {
 		cexAssetsInfo := utils.RecoverAfterCexAssets(witness)
 		var newAssetsInfo []utils.CexAssetInfo
 		for i := 0; i < len(cexAssetsInfo); i++ {
-			if cexAssetsInfo[i].BasePrice != 0 {
+			if cexAssetsInfo[i].BasePrice != big.NewInt(0) {
 				newAssetsInfo = append(newAssetsInfo, cexAssetsInfo[i])
 			}
 		}

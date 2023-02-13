@@ -5,7 +5,7 @@ import "math/big"
 type CexAssetInfo struct {
 	TotalEquity uint64
 	TotalDebt   uint64
-	BasePrice   uint64
+	BasePrice   *big.Int
 	Symbol      string
 	Index       uint32
 }

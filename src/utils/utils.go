@@ -8,9 +8,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
-	"github.com/shopspring/decimal"
 	"hash"
 	"io/ioutil"
 	"math/big"
@@ -19,6 +16,10 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
+	"github.com/shopspring/decimal"
 )
 
 func ConvertAssetInfoToBytes(value any) []byte {
@@ -30,11 +31,10 @@ func ConvertAssetInfoToBytes(value any) []byte {
 	case CexAssetInfo:
 		equityBigInt := new(big.Int).SetUint64(t.TotalEquity)
 		debtBigInt := new(big.Int).SetUint64(t.TotalDebt)
-		basePriceBigInt := new(big.Int).SetUint64(t.BasePrice)
 		return new(big.Int).Add(new(big.Int).Add(
 			new(big.Int).Mul(equityBigInt, Uint64MaxValueBigIntSquare),
 			new(big.Int).Mul(debtBigInt, Uint64MaxValueBigInt)),
-			basePriceBigInt).Bytes()
+			t.BasePrice).Bytes()
 	default:
 		panic("not supported type")
 	}
@@ -188,6 +188,10 @@ func ReadUserDataFromCsvFile(name string) ([]AccountInfo, []CexAssetInfo, error)
 	//fmt.Println(data[1])
 	accountIndex := 0
 	cexAssetsInfo := make([]CexAssetInfo, AssetCounts)
+	for i := 0; i < AssetCounts; i++ {
+		cexAssetsInfo[i].BasePrice = big.NewInt(0)
+	}
+
 	accounts := make([]AccountInfo, len(data)-1)
 	assetCounts := (len(data[0]) - 3) / 4
 	symbols := data[0]
@@ -199,7 +203,7 @@ func ReadUserDataFromCsvFile(name string) ([]AccountInfo, []CexAssetInfo, error)
 		if AssetTypeForTwoDigits[cexAssetsInfo[i].Symbol] {
 			multiplier = 100000000000000
 		}
-		cexAssetsInfo[i].BasePrice, err = ConvertFloatStrToUint64(data[0][assetCounts*3+i+2], multiplier)
+		cexAssetsInfo[i].BasePrice, err = ConvertFloatStrToBigInt(data[0][assetCounts*3+i+2], multiplier)
 		if err != nil {
 			fmt.Println("asset data wrong:", data[0][assetCounts*3+i+2], err.Error())
 			continue
@@ -248,10 +252,25 @@ func ReadUserDataFromCsvFile(name string) ([]AccountInfo, []CexAssetInfo, error)
 				tmpAsset.Debt = debt
 				assets = append(assets, tmpAsset)
 
+				// update calculaction of TotalEquity
+				orginalPrice := cexAssetsInfo[j].BasePrice
+				if j == 0 && i >= 16 && i < 32 {
+					cexAssetsInfo[j].BasePrice = new(big.Int).Add(
+						cexAssetsInfo[j].BasePrice,
+						new(big.Int).Mul(
+							new(big.Int).SetUint64(accounts[0].Assets[0].Debt),
+							Uint64MaxValueBigInt))
+				}
+
 				account.TotalEquity = new(big.Int).Add(account.TotalEquity,
-					new(big.Int).Mul(new(big.Int).SetUint64(tmpAsset.Equity), new(big.Int).SetUint64(cexAssetsInfo[j].BasePrice)))
+					new(big.Int).Mul(new(big.Int).SetUint64(tmpAsset.Equity), cexAssetsInfo[j].BasePrice))
 				account.TotalDebt = new(big.Int).Add(account.TotalDebt,
-					new(big.Int).Mul(new(big.Int).SetUint64(tmpAsset.Debt), new(big.Int).SetUint64(cexAssetsInfo[j].BasePrice)))
+					new(big.Int).Mul(new(big.Int).SetUint64(tmpAsset.Debt), cexAssetsInfo[j].BasePrice))
+
+				// restore correct price
+				if j == 0 && i >= 16 && i < 32 {
+					cexAssetsInfo[j].BasePrice = orginalPrice
+				}
 			}
 		}
 
@@ -290,6 +309,23 @@ func ConvertFloatStrToUint64(f string, multiplier int64) (uint64, error) {
 	}
 	num := numBigInt.Uint64()
 	return num, nil
+}
+
+func ConvertFloatStrToBigInt(f string, multiplier int64) (*big.Int, error) {
+	if f == "0.0" {
+		return big.NewInt(0), nil
+	}
+	numFloat, err := decimal.NewFromString(f)
+	// equityFloat, err := strconv.ParseFloat(data[i][j*3+1], 64)
+	if err != nil {
+		return big.NewInt(0), err
+	}
+	numFloat = numFloat.Mul(decimal.NewFromInt(multiplier))
+	numBigInt := numFloat.BigInt()
+	if numBigInt == nil {
+		numBigInt = big.NewInt(0)
+	}
+	return numBigInt, nil
 }
 
 func DecodeBatchWitness(data string) *BatchCreateUserWitness {
@@ -371,6 +407,10 @@ func RecoverAfterCexAssets(witness *BatchCreateUserWitness) []CexAssetInfo {
 func ComputeCexAssetsCommitment(cexAssetsInfo []CexAssetInfo) []byte {
 	hasher := poseidon.NewPoseidon()
 	emptyCexAssets := make([]CexAssetInfo, AssetCounts-len(cexAssetsInfo))
+	for i := 0; i < len(emptyCexAssets); i++ {
+		emptyCexAssets[i].BasePrice = big.NewInt(0)
+	}
+
 	cexAssetsInfo = append(cexAssetsInfo, emptyCexAssets...)
 	for i := 0; i < len(cexAssetsInfo); i++ {
 		commitment := ConvertAssetInfoToBytes(cexAssetsInfo[i])

@@ -5,6 +5,12 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"fmt"
+	"log"
+	"math/big"
+	"os"
+	"runtime"
+	"time"
+
 	"github.com/binance/zkmerkle-proof-of-solvency/src/utils"
 	"github.com/binance/zkmerkle-proof-of-solvency/src/witness/config"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
@@ -12,11 +18,6 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"log"
-	"math/big"
-	"os"
-	"runtime"
-	"time"
 )
 
 type Witness struct {
@@ -142,7 +143,23 @@ func (w *Witness) Run() {
 		}(i)
 	}
 
+	correctPrice := w.cexAssets[0].BasePrice
+	correctDebt := uint64(0)
 	for i := height + 1; i < int64(batchNumber); i++ {
+		if i == 1 {
+			correctDebt = w.cexAssets[0].TotalDebt 
+			w.cexAssets[0].TotalDebt = 0
+			w.cexAssets[0].BasePrice = new(big.Int).Add(
+				w.cexAssets[0].BasePrice,
+				new(big.Int).Mul(
+					new(big.Int).SetUint64(correctDebt),
+					utils.Uint64MaxValueBigInt))
+		}
+		if i == 2 {
+			w.cexAssets[0].TotalDebt = correctDebt
+			w.cexAssets[0].BasePrice = correctPrice
+		}
+
 		batchCreateUserWit := &utils.BatchCreateUserWitness{
 			BeforeAccountTreeRoot: w.accountTree.Root(),
 			BeforeCexAssets:       make([]utils.CexAssetInfo, utils.AssetCounts),
