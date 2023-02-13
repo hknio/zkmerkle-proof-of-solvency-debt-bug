@@ -34,7 +34,7 @@ cd src/witness && go run main.go
 ```bash
 cd src/prover && go run main.go
 ```
-5. export proof0 table for postgres zkpos database and save it to `src/verifier/proof.csv`
+5. export proof0 table for postgres zkpos database and save it to `src/verifier/config/proof.csv`
 6. run verifier
 ```bash
 cd src/verifier && go run main.go
