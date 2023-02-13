@@ -18,7 +18,7 @@ Repository contains valid proof for binance proof of solvency with `BatchCreateU
 
 1. generate keys for ZKP
 ```bash
-cd src/keygen && go run main.py
+cd src/keygen && go run main.go
 ```
 2. run dockers:
 ```bash
