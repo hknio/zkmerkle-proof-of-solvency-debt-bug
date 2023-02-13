@@ -37,7 +37,7 @@ cd src/prover && go run main.go
 5. export proof0 table for postgres zkpos database and save it to `src/verifier/proof.csv`
 6. run verifier
 ```bash
-cd src/prover && go run main.go
+cd src/verifier && go run main.go
 ```
 
 You can skip steps 2-5 if you do not want to generate proof by yourself, there is already my proof in `src/verifier`.
